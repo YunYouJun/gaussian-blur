@@ -52,7 +52,7 @@ export default {
   data() {
     return {
       count: 0,
-      url: '/test.jpg',
+      url: './test.jpg',
       originalBlur: {
         startTime: 0,
         endTime: 0,
