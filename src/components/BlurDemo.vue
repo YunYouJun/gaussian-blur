@@ -1,31 +1,47 @@
 <template>
   <div class="container">
     <div class="canvas-container one">
-      <canvas id="originCanvas" ref="originCanvas" height="250"></canvas>
+      <canvas id="originCanvas" ref="originCanvas" height="240"></canvas>
       <div>
         <sub>原图</sub>
       </div>
     </div>
     <div class="canvas-container two">
-      <canvas id="blurCanvas" ref="blurCanvas" height="250"></canvas>
-      <div>
-        <sub>高斯模糊（原始算法）1px</sub>
-      </div>
-    </div>
-    <div class="canvas-container three">
-      <canvas id="fastBlurCanvas" ref="fastBlurCanvas" height="250"></canvas>
-      <div>
-        <sub>高斯模糊（快速算法）6px</sub>
-      </div>
-    </div>
-    <div class="canvas-container four">
       <canvas
         id="filterBlurCanvas"
         ref="filterBlurCanvas"
-        height="250"
+        height="240"
       ></canvas>
       <div>
         <sub>高斯模糊（Canvas Filter）6px</sub>
+      </div>
+    </div>
+    <div class="canvas-container three">
+      <canvas id="blurCanvas" ref="blurCanvas" height="240"></canvas>
+      <div>
+        <sub>高斯模糊（原始算法）1px</sub>
+      </div>
+      <div>
+        模糊半径（慎重）：<input
+          class="gb-input"
+          v-model="originalBlur.radius"
+          type="number"
+          placeholder="模糊半径"
+        /><button class="gb-btn" @click="doOriginalBlur()">Blur</button>
+      </div>
+    </div>
+    <div class="canvas-container four">
+      <canvas id="fastBlurCanvas" ref="fastBlurCanvas" height="240"></canvas>
+      <div>
+        <sub>高斯模糊（快速算法）</sub>
+      </div>
+      <div>
+        模糊半径：<input
+          class="gb-input"
+          v-model="fastBlur.radius"
+          type="number"
+          placeholder="模糊半径"
+        /><button class="gb-btn" @click="doFastBlur()">Blur</button>
       </div>
     </div>
   </div>
@@ -54,20 +70,24 @@ export default {
       count: 0,
       url: './test.jpg',
       originalBlur: {
+        radius: 1,
         startTime: 0,
         endTime: 0,
       },
       fastBlur: {
+        radius: 6,
         startTime: 0,
         endTime: 0,
       },
+      image: null,
     }
   },
   async mounted() {
     this.resizeCanvas(this.$refs.originCanvas)
+    this.resizeCanvas(this.$refs.filterBlurCanvas)
     this.resizeCanvas(this.$refs.blurCanvas)
     this.resizeCanvas(this.$refs.fastBlurCanvas)
-    this.resizeCanvas(this.$refs.filterBlurCanvas)
+
     await this.handleFileChange()
 
     this.doOriginalBlur()
@@ -76,9 +96,9 @@ export default {
   methods: {
     async handleFileChange() {
       const image = await readImage(this.url)
+      this.image = image
       await drawToCanvas(image, this.$refs.originCanvas)
       await drawToCanvas(image, this.$refs.blurCanvas)
-      await drawToCanvas(image, this.$refs.fastBlurCanvas)
       await drawToCanvas(image, this.$refs.filterBlurCanvas, {
         filter: 'blur(6px)',
       })
@@ -105,16 +125,18 @@ export default {
       this.originalBlur.startTime = new Date()
 
       const bluredImageData = blur(imageData, canvas.width, canvas.height, {
-        radius: 1,
+        radius: this.originalBlur.radius,
       })
       clearCanvas(this.$refs.blurCanvas)
       this.drawToBlurCanvas(bluredImageData, canvas.width, canvas.height)
 
       this.originalBlur.endTime = new Date()
     },
-    doFastBlur() {
+    async doFastBlur() {
+      clearCanvas(this.$refs.fastBlurCanvas)
+      await drawToCanvas(this.image, this.$refs.fastBlurCanvas)
       this.fastBlur.startTime = new Date()
-      const blur = new Blur({ radius: 6 })
+      const blur = new Blur({ radius: parseInt(this.fastBlur.radius) })
       blur.initCanvas(this.$refs.fastBlurCanvas)
       blur.gaussianBlur()
       this.fastBlur.endTime = new Date()
@@ -174,6 +196,57 @@ canvas {
     padding: 0.5rem 0.8rem;
 
     border-radius: 0.2rem;
+  }
+}
+
+.gb-input {
+  font-family: -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Avenir,
+    PingFang SC, Helvetica Neue, Helvetica;
+  padding: 0 0.5rem;
+  display: inline-flex;
+  vertical-align: middle;
+  align-items: center;
+  border-radius: 5px;
+  background-color: transparent;
+  font-size: 1rem;
+  height: 2rem;
+  line-height: 1.5rem;
+  width: auto;
+  outline: 0;
+  box-sizing: border-box;
+  margin: 4px 10px;
+  border: 1px solid #e1e1e1;
+  -webkit-appearance: none;
+  transition: border 0.2s ease, color 0.2s ease;
+}
+
+.gb-btn {
+  display: inline-block;
+  padding: 0 1.5rem;
+  border-radius: 5px;
+  font-weight: 500;
+  font-size: 0.8rem;
+  cursor: pointer;
+  user-select: none;
+  outline: none;
+  justify-content: center;
+  text-transform: uppercase;
+  text-align: center;
+  height: 2rem;
+  line-height: 2rem;
+  width: auto;
+  min-width: 5rem;
+  white-space: nowrap;
+  transition: border 0.2s, background 0.2s, color 0.2s ease-out;
+  position: relative;
+  overflow: hidden;
+  background: black;
+  border: 1px solid #eaeaea;
+  color: white;
+
+  &:hover {
+    background: white;
+    color: black;
   }
 }
 </style>
